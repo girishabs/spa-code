@@ -48,8 +48,7 @@ PStage Bidder::protocolSetupStage()
         x[j] = grp->getRandomNumber() ;
         r[j] = grp->getRandomNumber() ;
 
-        if(grp->power(pubKey[j], grp->g, x[j]) == 0)
-            printf("Error in pubkey[%d][%d]\n",id,j); //pubKey = g^x
+        grp->power(pubKey[j], grp->g, x[j]); //pubKey = g^x
 
         bidderBB->pubKey[j] = pubKey[j]->gpt; // Write public keys to BB
         
@@ -115,21 +114,17 @@ void Bidder::initBidder()
             num = grp->getRandomNumber() ;
             auto pstart = std::chrono::high_resolution_clock::now();
 
-            if(grp->power(&f, grp->g, num) ==0) // Choose random num from Z_q and raise g^num to get zeta (T1).
-                printf("Error while computing zeta[%d][%d] = g^num\n",i,j);
+            grp->power(&f, grp->g, num); // Choose random num from Z_q and raise g^num to get zeta.
 
             bidderBB->zeta[j] = f.gpt; // Write zeta values to BB
                 
-            if(grp->power(&e,grp->g, beta[j]) == 0) // G0 = g^beta
-                printf("Error while computing g^beta[%d][%d]\n",i,j);
-
+            grp->power(&e,grp->g, beta[j]); // G0 = g^beta
             G0[j] = e.gpt;
 
 
             grp->elementMultiply(&e, &e, &f); // G1 = G0.zeta = g^beta.zeta
             G1[j] = e.gpt;
                 
-#ifdef OT
             grp->power(&e,grp->h, beta[j]); // H0 = h^beta
             H0[j] = e.gpt;
 
@@ -146,7 +141,7 @@ void Bidder::initBidder()
             grp->elementMultiply(&e, &f, zeroToken[j]); // ztCommitment = g^omega . h^delta
             bidderBB->ztCommit[j] = e.gpt; // Copy the commitment to BB
 
-#endif //OT
+
         }
         
     
@@ -167,9 +162,7 @@ void Bidder::initBidder()
         // The Pedersen commitments for jth bit are of the form: cj = g^bj . h^aj
 
         a[j] = grp->getRandomNumber();
-
-        if(grp->power(bitCommit[j], grp->h, a[j]) == 0)
-            printf("Error while computing commitment[%d][%d]\n",id,j);
+        grp->power(bitCommit[j], grp->h, a[j]);
 
         if(bitsOfBid[j])
             grp->elementMultiply(bitCommit[j], grp->g, bitCommit[j]); // cj = g . h^aj
@@ -183,6 +176,128 @@ void Bidder::initBidder()
 
 }
 
+
+
+void * OldOTUpdate(void *input)
+{
+    struct thread_data *td = (struct thread_data *) input;
+    uint id = td->id;
+    uint i = td->i;
+    uint j = td->j;
+
+    Bidder *bidder = (Bidder *)td->bidder;
+
+    //cout << "Inside thread " << i<< " for bidder " << id << " j = " << j << endl;
+    //bidder->grp->printGroupElement(bidder->grp->g);
+    //bidder->grp->power(&e,bidder->grp->g, bidder->beta[i][j]);
+    //BN_print_fp(stdout, bidder->beta[i][j]);
+    //cout << endl;
+
+    if(td->bit == 0) // OT params for choice bit = 0
+    {
+        bidder->bidderBB[id].G[j] = bidder->G0[j] ; 
+
+        bidder->bidderBB[id].H[j] = bidder->H0[j] ; 
+
+    }
+    else if(td->bit == 1) // OT params for choice bit = 1
+    {
+        bidder->bidderBB[id].G[j] = bidder->G1[j] ;    
+        bidder->bidderBB[id].H[j] = bidder->H1[j] ; 
+    }
+    GroupElement *e  = new GroupElement(bidder->grp, &bidder->bidderBB[id].G[j]);   
+    GroupElement *f  = new GroupElement(bidder->grp, &bidder->bidderBB[id].H[j]);   
+
+#ifdef DEBUG
+    printf("Values of G and H %d,%d are:\n", i,j);
+    bidder->grp->printGroupElement(e);
+    bidder->grp->printGroupElement(f);
+#endif    
+
+    bidder->bb->OTParamsUpdated[id][j] = true;   
+
+    BBMemoryBidder *bidderBB = static_cast<struct BBMemoryBidder *>(&bidder->bb->bidderBB[i]);
+
+// Now wait for individual bidders to get back     
+
+    //printf("Inside thread %d\n",i);
+
+    char name[16];
+    sprintf(name, "bidderSyn-%d",i); // Each semaphore has a name of the form "bidder-<id>". E.g.: Bidder 12 has name "bidder-12"
+
+
+    sem_t *sem = sem_open(name, O_CREAT, 0777, 0);
+    if(sem == SEM_FAILED)
+    {
+        perror("sem: Semaphore creation failed");
+    }
+    //sem_wait(sem); // Wait to hear back from bidder i
+
+    int sval = 0;
+    sem_getvalue(sem, &sval);
+    //printf("Value of sync semaphore %d is %d\n", i, sval);
+    
+
+    sem_post(&bidder->eval_thr_sem[i]); // Increment the counting semaphore
+
+    pthread_exit(NULL);    
+}
+
+void * OTUpdate(void *input)
+{
+    struct thread_data *td = (struct thread_data *) input;
+    uint id = td->id;
+    uint i = td->i;
+    uint j = td->j;
+
+    Bidder *bidder = (Bidder *)td->bidder;
+    Group *grp = bidder->grp;
+
+    GroupElement e  = GroupElement(grp);   
+    GroupElement f  = GroupElement(grp);
+
+    //cout << "Inside thread " << i<< " for bidder " << id << " j = " << j << endl;
+    //bidder->grp->printGroupElement(bidder->grp->g);
+    //bidder->grp->power(&e,bidder->grp->g, bidder->beta[i][j]);
+    //BN_print_fp(stdout, bidder->beta[i][j]);
+    //cout << endl;
+
+    GroupElement zeta_i = GroupElement(grp, &bidder->bb->bidderBB[i].zeta[j]);
+    grp->getInverse(&zeta_i); // We are not going to use zeta; Only its inverse is useful
+
+    GroupElement G_ij = GroupElement(grp, &bidder->bb->bidderBB[i].G[j]);
+    GroupElement H_ij = GroupElement(grp, &bidder->bb->bidderBB[i].H[j]);
+
+
+    grp->elementMultiply(&e, &G_ij, &zeta_i); // Perform (G/zeta)
+    grp->elementMultiply(&f, &H_ij, grp->invT1); // Perform (H/T1)
+
+    // s and t values are that of sender, bidder[id]
+
+    grp->power(&e, &e, bidder->s[j]); // Perform (G/zeta)^s
+    grp->power(&f, &f, bidder->t[j]); // Perform (H/T1)^t 
+
+    grp->elementMultiply(&e, &e, &f);
+    grp->elementMultiply(&e, &e, bidder->bitcode[j]);
+
+    // Send OT messages to other parties
+    bidder->bb->bidderBB[i].OTPostBox_1[id][j] = e.gpt; // Post the OT message to Bidder_i's postbox, at the entry (id,j)
+
+
+    // Similarly encoding for M_0 is: C_0 = (G)^s . (H)^t . zeroToken_ij (where zeroToken_ij is the 0-token for j'th round.   
+
+    grp->power(&e, &G_ij, bidder->s[j]); // Perform (G)^s
+    grp->power(&f, &H_ij, bidder->t[j]); // Perform (H)^t 
+
+    grp->elementMultiply(&e, &e, &f);
+    grp->elementMultiply(&e, &e, bidder->zeroToken[j]);
+
+
+
+    bidder->bb->bidderBB[i].OTPostBox_0[id][j] = e.gpt; // Post the OT message to Bidder_i's postbox, at the entry (id,j)    
+
+    pthread_exit(NULL);    
+}
 
 /* This procedure implements the computation stage of the protocol - for the bidder.
  * The bidder computes the ABP bit.
@@ -228,22 +343,17 @@ PStage Bidder::protocolComputeStageBidder()
 
         // grp->printGroupElement(bitcode[j]);
 
-
         if(computeBit[j] == 0) // OT params for choice bit = 0
         {
             bidderBB->G[j] = G0[j] ; 
-#ifdef OT            
-            bidderBB->H[j] = H0[j] ; 
-#endif // OT
-        }
-        else 
 
-	if(computeBit[j] == 1) // OT params for choice bit = 1
+            bidderBB->H[j] = H0[j] ; 
+
+        }
+        else if(computeBit[j] == 1) // OT params for choice bit = 1
         {
-            bidderBB->G[j] = G1[j] ;   
-#ifdef OT             
+            bidderBB->G[j] = G1[j] ;    
             bidderBB->H[j] = H1[j] ; 
-#endif // OT            
         }
      
 
@@ -271,35 +381,24 @@ PStage Bidder::protocolComputeStageBidder()
             grp->getInverse(&zeta_i); // We are not going to use zeta; Only its inverse is useful
 
             GroupElement G_ij = GroupElement(grp, &bb->bidderBB[i].G[j]);
-#ifdef OT
             GroupElement H_ij = GroupElement(grp, &bb->bidderBB[i].H[j]);
 
-            grp->elementMultiply(&f, &H_ij, grp->invT1); // Perform (H/T1)
-#endif //OT
         
             grp->elementMultiply(&e, &G_ij, &zeta_i); // Perform (G/zeta)
+            grp->elementMultiply(&f, &H_ij, grp->invT1); // Perform (H/T1)
 
             // s and t values are that of sender, bidder[id]
-            //printf("s[%d][%d] = \n",id,j);
-            //BN_print_fp(stdout, s[j]);
 
-            if(grp->power(&e, &e, s[j]) == 0) // Perform (G/zeta)^s
-                printf("Error while computing g^s[%d][%d]\n",id,j); // Perform (G/zeta)^s
-#ifdef OT
+            grp->power(&e, &e, s[j]); // Perform (G/zeta)^s
             grp->power(&f, &f, t[j]); // Perform (H/T1)^t 
 
             grp->elementMultiply(&e, &e, &f);
-#endif //OT
             grp->elementMultiply(&e, &e, bitcode[j]);
-
-            //printf("The sent bit code[%d][%d] is:\n",id,j);
-            //grp->printGroupElement(bitcode[j]);
 
             // Send OT messages to other parties
             bb->bidderBB[i].OTPostBox_1[id][j] = e.gpt; // Post the OT message to Bidder_i's postbox, at the entry (id,j)
 
 
-#ifdef OT
             // Similarly encoding for M_0 is: C_0 = (G)^s . (H)^t . zeroToken_ij (where zeroToken_ij is the 0-token for j'th round.    
             grp->power(&e, &G_ij, s[j]); // Perform (G)^s
             grp->power(&f, &H_ij, t[j]); // Perform (H)^t 
@@ -310,7 +409,7 @@ PStage Bidder::protocolComputeStageBidder()
 
 
             bb->bidderBB[i].OTPostBox_0[id][j] = e.gpt; // Post the OT message to Bidder_i's postbox, at the entry (id,j)
-#endif //OT                          
+                          
 
 
         
@@ -342,25 +441,23 @@ PStage Bidder::protocolComputeStageBidder()
 
             GroupElement z  = GroupElement(grp, &bb->bidderBB[i].z[j]); // Retrive the value of z for this round for bidder[i]
             GroupElement a  = GroupElement(grp);
-
-            if(grp->power(&a,&z,invbeta[j]) == 0)
-                printf("Error while computing a = z^{-beta}[%d[%d]\n",id,j);
+            grp->power(&a,&z,invbeta[j]);
 
             if(computeBit[j])
             {                    
                 GroupElement C1 = GroupElement(grp, &bidderBB->OTPostBox_1[i][j]); // Retrieve the message C1 (bit code) sent by bidder[i] for round j
             
                 grp->elementMultiply(bidderBitcode[i],&C1,&a); // Retrieve bitcode from i'th party
-                //printf("The received bit code[%d][%d] is:\n",i,j);
-                //grp->printGroupElement(bidderBitcode[i]);
+                // printf("The received bit code[%d][%d] is:\n",i,j);
+                // grp->printGroupElement(bidderBitcode[i]);
             }
-#ifdef OT
+
             else
             {            
                 GroupElement C0 = GroupElement(grp, &bidderBB->OTPostBox_0[i][j]); // Retrieve the message C0 (0-token) sent by bidder[i] for round j                
                 grp->elementMultiply(bidderZToken[i][j],&C0,&a); // Retrieve zeroToken from i'th party            
             }
-#endif //OT
+
 
         }
         if(computeBit[j]) 
@@ -483,13 +580,13 @@ void Bidder::protocolVerificationStage()
 
         return;
     }
-#ifdef OT 
+    
     // Produce zero tokens for the rounds with computed bit 0
     for(j = 0; j < MAX_BIT_LENGTH; j++)
     {
         if(winBit[j])
             continue;
-//TBD
+
         bidderBB->zeroToken[j] = zeroToken[j]->gpt;
     }
     bb->zeroTokenProduced[id] = true;
@@ -508,7 +605,6 @@ void Bidder::protocolVerificationStage()
         bidderBB->zeroToken[j] = zeroToken[j]->gpt;
     }
     // printf("Done with zero tokens\n");
-#endif //OT
 
     // Prepare NIZK proofs for each round which has computed output to be 1
 
@@ -608,10 +704,13 @@ void Bidder::protocolVerificationStage()
             BN_bin2bn(bidderBB->pPack[j].sToken[k],MAX_BIG_NUM_SIZE,vrfyPrf.pPack.sToken[k]);    
         }
 
-        if(prf.verifyNIZKProof(pData, &prf.pPack)==false)
+
+        if(prf.verifyNIZKProof(pData, &prf.pPack))
+        {
+            printf("*******NIZK proof succeeds********\n\n\n");
+        }
+        else 
             printf("*****NIZK proof rejected******\n\n\n");
-        //else 
-         //   printf("*******NIZK proof succeeds********\n\n\n");
     }
 
 
