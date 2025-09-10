@@ -62,19 +62,10 @@ public:
 		for(uint j = 0; j < MAX_BIT_LENGTH; j++)
 		{
 			s[j] = grp->getRandomNumber();
-
-			if(grp->power(&e, grp->g, s[j]) ==0)
-				printf("Error in computing z=g^s[%d][%d]\n",id,j);
-
-			//printf("s[%d][%d] = \n",id,j);
-            //BN_print_fp(stdout, s[j]);
-
-#ifdef OT			
 			t[j] = grp->getRandomNumber();
-		
+			grp->power(&e, grp->g, s[j]);
 			grp->power(&f, grp->h, t[j]);
 			grp->elementMultiply(&e,&e,&f);
-#endif //OT			
 			bidderBB->z[j] = e.gpt;
 			// printf("z[%d][%d] is:\n",id, j);
 			// grp->printGroupElement(&e);
@@ -88,21 +79,18 @@ public:
 			bitCommit[j] = new GroupElement(grp);
 			pubKey[j] = new GroupElement(grp);
 			yCode[j] = new GroupElement(grp);
-#ifdef OT
+
 			zeroToken[j] = new GroupElement(grp);	
 			ztCommit[j] = new GroupElement(grp);	
-#endif //OT			
 
 		}
-#ifdef OT		
 		for(uint i = 0; i < MAX_BIDDERS; i++)
 		{
 			for(uint j = 0; j < MAX_BIT_LENGTH; j++)
 			{
 				bidderZToken[i][j] = new GroupElement(grp);
 			}
-		}
-#endif //OT				
+		}		
 		zeroBitCode = GroupElement(grp);	
 
 		char name[32];
@@ -135,20 +123,16 @@ public:
 		for(uint j = 0; j < MAX_BIT_LENGTH; j++)
 		{
 			BN_free(s[j]);
-#ifdef OT			
 			BN_free(t[j]);
-			delete zeroToken[j];
-			delete ztCommit[j];
-#endif // OT			
 			
 			delete bitcode[j];	
-	
+			delete zeroToken[j];
+			delete ztCommit[j];
 
 			BN_free(beta[j]);
 			BN_free(invbeta[j]);
 		}	
 		delete grp;	
-#ifdef OT					
 		for(uint i = 0; i < MAX_BIDDERS; i++)
 		{
 			for(uint j = 0; j < MAX_BIT_LENGTH; j++)
@@ -156,7 +140,6 @@ public:
 				delete bidderZToken[i][j];
 			}
 		}
-#endif // OT			
 
 		sem_close(bidder_thr_sem);
 		sem_close(comp_stg_sem);
@@ -234,9 +217,7 @@ public:
 	unsigned char keyHash[SHA256_DIGEST_LENGTH]; // Hash of the private keys
 
 	BIGNUM* s[MAX_BIT_LENGTH]; // Randomness used during OT 2nd message
-#ifdef OT	
 	BIGNUM* t[MAX_BIT_LENGTH]; // Randomness used during OT 2nd message
-#endif //OT	
 
 
 	GroupElement *bitcode[MAX_BIT_LENGTH]; // Bit codes used during the computation stage
@@ -254,26 +235,20 @@ public:
 
 
 
-	
-	GrpPoint G0[MAX_BIT_LENGTH];
-
-#ifdef OT	
 	// OT first message parameters
+	GrpPoint G0[MAX_BIT_LENGTH];
 	GrpPoint H0[MAX_BIT_LENGTH];
-	GrpPoint H1[MAX_BIT_LENGTH];
-#endif	// OT
 	GrpPoint G1[MAX_BIT_LENGTH];
-	
+	GrpPoint H1[MAX_BIT_LENGTH];
 	GroupElement *T;
 
-#ifdef OT
 	// Zero Tokens used to prove that correct choice bit is used for OT
 	BIGNUM * omega[MAX_BIT_LENGTH]; // Random value to generate Zero token is picked from Z_q 
 	BIGNUM * delta[MAX_BIT_LENGTH]; // Random value to commit to Zero token is picked from Z_q 
 	GroupElement *zeroToken[MAX_BIT_LENGTH]; // zeroToken = g^omega
 	GroupElement *ztCommit[MAX_BIT_LENGTH]; // Pedersen Commitment to omega - used to generate zeroToken. 
 	GroupElement *bidderZToken[MAX_BIDDERS][MAX_BIT_LENGTH]; // Array to store the zero tokens received from other parties.
-#endif // OT
+
 
 	pthread_cond_t *cond; // Conditional variable
 	pthread_mutex_t *mutex; // Corresponding mutex
