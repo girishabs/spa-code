@@ -1,0 +1,128 @@
+# This is a small script to invoke the second price auction process. This script
+# invokes individual terminal for each bidder.
+# It begins by removing the shared memory instance from any previous run.
+# The executable "auction" takes two parameters: id and bid value.
+# Both these parameters are mandatory to be provided.
+# The location of executable is assumed to be in $HOME/Documents/prog/spa-code/ directory.
+# This can be changed as required.
+# ***IMPORANT*** 
+# It is important to ensure that the ids are in sequence and correspond exactly
+# to the number of bidders configured in common.h file. For example, in this 
+# case we have used 15 bidders with bit length of 10. Hence the ids are used
+# from 0-14. In case number of bidders is to be increased, change the number in 
+# common.h file for number of bidders and uncomment those in this script.
+# For example, if the number of bidders needs to be changed to 16, change the 
+# MAX_BIDDERS value to 20 in common.h file. Then add more lines to the script as necessary.
+# Similarly for decreasing the number of
+# bidders, change the common.h file and comment out the lines below.
+# If MAX_BIT_LENGTH is changed in common.h file, there is no need to change this
+# file. One can also change the bid values used below. However, note that it 
+# should be matching the bits used for representation. For example, if 5 bits
+# used for MAX_BIT_LENGTH, choose bid values from 1 to 31.
+
+rm /dev/shm/Bulletin\ Board
+rm /dev/shm/sem.*
+killall auction
+killall xterm
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 0 275 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 1 579 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 2 182 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 3 102 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 4 813 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 5 743 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 6 232 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 7 132 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 8 485 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 9 1012 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 10 802 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 11 822 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 12 842 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 13 852 &
+xterm -hold -e $HOME/Documents/prog/spa-code/auction 14 162 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 15 235 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 16 379 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 17 482 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 18 502 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 19 613 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 20 743 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 21 832 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 22 932 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 23 185 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 24 1002 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 25 812 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 26 811 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 27 841 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 28 851 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 29 861 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 30 271 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 31 571 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 32 181 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 33 101 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 34 811 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 35 741 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 36 231 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 37 131 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 38 481 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 39 312 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 40 732 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 41 632 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 42 532 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 43 432 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 44 332 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 45 232 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 46 132 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 47 822 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 48 922 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 49 732 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 50 622 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 51 577 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 52 188 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 53 100 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 54 811 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 55 744 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 56 233 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 57 133 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 58 488 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 59 1011 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 60 800 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 61 888 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 62 844 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 63 855 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 64 866 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 65 277 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 66 599 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 67 122 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 68 322 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 69 113 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 70 443 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 71 332 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 72 111 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 73 484 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 74 1019 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 75 808 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 76 828 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 77 848 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 78 858 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 79 868 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 80 772 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 81 575 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 82 181 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 83 101 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 84 313 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 85 747 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 86 333 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 87 119 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 88 455 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 89 1018 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 90 202 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 91 622 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 92 442 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 93 952 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 94 361 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 95 666 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 96 777 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 97 555 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 98 339 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 99 444 &
+#xterm -hold -e $HOME/Documents/prog/spa-code/auction 100 666 &
+exit
